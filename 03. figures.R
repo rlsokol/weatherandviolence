@@ -1,10 +1,10 @@
 ###############################################################################
 #  Updated version of the code for the analysis in:                           #
 #                                                                             #
-#   "Extreme weather and violence:                                            #
-#    A case study in Wayne County, Michigan, United States"                   #
+#  Climate change-induced extreme weather events alter the frequency of       #
+#  firearm incidents and child maltreatment cases in Wayne County, Michigan   #
 #                                                                             #
-#  Update: 11 April 2024                                                      #
+#  Update: 23 September 2024                                                  #
 ###############################################################################
 
 ###############################################################################
@@ -20,7 +20,7 @@ weather_dates <- subset(data, storm==1)$Date
 # DESCRIPTIVE FIGURES FROM MODELS    #
 ######################################
 
-# Note: Run model from 02.analysis code
+# Note: Run model from 02.analysis code using data_limit_1823
 
 predicted_fa <- predict.glm(model_fa, se=T, data.frame=data_forpred, type="response")
 newdf_fa <- cbind(data.frame(predicted_fa$fit), data %>% filter(day_index >= 1469))
