@@ -1,15 +1,17 @@
 ###############################################################################
 #  Updated version of the code for the analysis in:                           #
 #                                                                             #
-#   "Extreme weather and violence:                                            #
-#    A case study in Wayne County, Michigan, United States"                   #
+#  Climate change-induced extreme weather events alter the frequency of       #
+#  firearm incidents and child maltreatment cases in Wayne County, Michigan   #
 #                                                                             #
-#  Update: 11 April 2024                                                      #
+#  Update: 23 September 2024                                                  #
 ###############################################################################
 
 ###############################################################################
 # 02 ANALYSES                                                                 # 
 ###############################################################################
+
+
 
 ################
 # SELECT DATA  #
@@ -26,6 +28,18 @@ data <- data_limit_1823
 #data <- data_unlimit_1819
 #data <- data_unlimit_onset
 #data <- data_unlimit_2223
+
+#data <- data_flood_1823
+#data <- data_flood_1819
+#data <- data_flood_onset
+#data <- data_flood_2223 #(too few floods in 2022-23; n=1)
+
+#data <- data_wind_1823
+#data <- data_wind_1819
+#data <- data_wind_onset #(too few wind events in 2020-21; n=5)
+#data <- data_wind_2223
+
+#data <- data_limit_2022
 
   # data descriptives
   mean(data$incidents)
@@ -50,7 +64,8 @@ data <- data_limit_1823
 
 # MAIN ANALYSES
 
-  # main analyses, 6 years (data_limit_1823, data_unlimit_1823)
+  # main analyses, 6 years (data_limit_1823, data_unlimit_1823, 
+  #                         data_flood_1823, data_wind_1823)
    argvar_extremeweather<-list(fun="lin")
    arglag_extremeweather<-list(fun="poly",degree=3)  
    n_y = 6
@@ -58,14 +73,18 @@ data <- data_limit_1823
    n_lag = 7
   
   # main analyses, 2 years (data_limit_1819, data_unlimit_1819, 
-  #                         data_limit_2223, data_unlimit_2223)
+  #                         data_limit_2223, data_unlimit_2223,
+  #                         data_flood_1819, data_wind_1819,
+  #                         data_flood_2223, data_wind_2223)
   # argvar_extremeweather<-list(fun="lin")
   # arglag_extremeweather<-list(fun="poly",degree=3)  
   # n_y = 2
   # df_y = 7
   # n_lag = 7
     
-  # main analyses, 1 year (data_limit_onset, data_unlimit_onset)
+  # main analyses, 1 year (data_limit_onset, data_unlimit_onset,
+  #                        data_flood_onset, data_wind_onset,
+  #                        data_limit_2022)
   # argvar_extremeweather<-list(fun="lin")
   # arglag_extremeweather<-list(fun="poly",degree=3) 
   # n_y = 1
@@ -242,7 +261,7 @@ cb2.temp<- crossbasis(data$max_temp_c, lag=0, argvar=list(fun="ns", df=4),
                  family=quasipoisson(), data)
   residuals <- residuals(model_fa,type="partial")
   pacf(residuals)
-  
+
   # reduce the model
   cp_fa <- crosspred(cb1.exweath,model_fa,at=0:1,bylag=0.2, cumul=TRUE)
   
@@ -252,7 +271,7 @@ cb2.temp<- crossbasis(data$max_temp_c, lag=0, argvar=list(fun="ns", df=4),
        main="Lag−response curve of the association between extreme weather and firearm violence")
   
   # plot the cumulative effects
-  # Increase left margin on plot
+  # Increase left margin on plot (col=4 for 2018-2023; col=2 for all else)
   par(mar = c(5, 5, 1, 1) + 0.1)  # Increase left margin
   plot(cp_fa, "slices", var=1, col=2, cumul=TRUE, ylab="Cumulative RR", xlab="Lag (in days)", 
        ylim = c(0, 2),
@@ -268,7 +287,20 @@ cb2.temp<- crossbasis(data$max_temp_c, lag=0, argvar=list(fun="ns", df=4),
   residuals <- residuals(model_fa,type="partial")
   pacf(residuals)
   
-
+  # global backward attributable risk of extreme weather (number and fraction)
+  attrdl(data$storm, cb1.exweath, data$incidents, model_fa, type = "an", cen=0, dir="back")
+  attrdl(data$storm, cb1.exweath, data$incidents, model_fa, type = "af", cen=0, dir="back")
+  
+  # empirical confidence intervals 
+  afsim <- attrdl(data$storm, cb1.exweath, data$incidents, model_fa, 
+                  type = "an", dir="back",
+                  sim=TRUE, nsim=1000, cen=0) 
+  quantile(afsim,c(2.5,97.5)/100)
+  
+  afsim <- attrdl(data$storm, cb1.exweath, data$incidents, model_fa, 
+                  type = "af", dir="back",
+                  sim=TRUE, nsim=1000, cen=0) 
+  quantile(afsim,c(2.5,97.5)/100)
   
 ############################
 # CHILD MALTREATMENT MODEL #
@@ -293,7 +325,7 @@ cb2.temp<- crossbasis(data$max_temp_c, lag=0, argvar=list(fun="ns", df=4),
        main="Lag−response curve of the association between extreme weather and firearm violence")
   
   # plot the cumulative effects
-  # Increase left margin on plot
+  # Increase left margin on plot (col=4 for 2018-2023; col=2 for all else)
   par(mar = c(5, 5, 1, 1) + 0.1)  # Increase left margin
   plot(cp_mtxt, "slices", var=1, col=2, cumul=TRUE, ylab="Cumulative RR", xlab="Lag (in days)", 
        ylim = c(0, 2),
@@ -308,13 +340,28 @@ cb2.temp<- crossbasis(data$max_temp_c, lag=0, argvar=list(fun="ns", df=4),
   # plot residuals
   residuals <- residuals(model_mtxt,type="partial")
   pacf(residuals)
+  
+  # global backward attributable risk of extreme weather (number and fraction)
+  attrdl(data$storm, cb1.exweath, data$substantiate, model_mtxt, type = "an", cen=0, dir="back")
+  attrdl(data$storm, cb1.exweath, data$substantiate, model_mtxt, type = "af", cen=0, dir="back")
+  
+  # empirical confidence intervals 
+  afsim <- attrdl(data$storm, cb1.exweath, data$substantiate, model_mtxt, 
+                  type = "an", dir="back",
+                  sim=TRUE, nsim=1000, cen=0) 
+  quantile(afsim,c(2.5,97.5)/100)
+  
+  afsim <- attrdl(data$storm, cb1.exweath, data$substantiate, model_mtxt, 
+                  type = "af", dir="back",
+                  sim=TRUE, nsim=1000, cen=0) 
+  quantile(afsim,c(2.5,97.5)/100)
 
 #################################
 # UNASSIGNED MALTREATMENT MODEL #
 #################################
   
   # run the model      
-  model_unas <- glm(unassigned_number ~ 
+  model_unas <- glm(falsepos_sub ~ 
                  cb1.exweath +
                  cb2.temp +
                  ns(day_index, df_y*n_y) +  
